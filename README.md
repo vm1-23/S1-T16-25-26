@@ -1,7 +1,7 @@
-# 🌱 Smart Irrigation System
+# Smart Irrigation System
 
 <!-- First Section -->
-## 👥 Team Details
+## Team Details
 <details>
   <summary>Detail</summary>
 
@@ -17,27 +17,50 @@
 
 ---
 
-## 🧾 Abstract
+## Abstract
 <details>
   <summary>Detail</summary>
 
-  > The **Smart Irrigation System** automates the process of watering multiple agricultural zones using **digital logic design**.  
-  > It intelligently decides when and which zone to water based on **soil moisture**, **rain detection**, and **quota usage**.  
-  >  
-  > The system is designed using **AND**, **OR**, and **NOT** logic gates, integrated through **Verilog HDL** at multiple abstraction levels: **Behavioral**, **Dataflow**, and **Structural**.  
-  >  
-  > Additionally, the system ensures **efficient water management** by distributing water sequentially to different zones instead of irrigating all at once — optimizing both **pressure stability** and **electricity usage**.  
-  >  
-  > A **zone sequencer** determines priority, a **register module** stores quota data, and **rain/sun sensors** adjust watering conditions dynamically.
+  ### Background
+  Water conservation and automation in agriculture are critical in modern environmental and farming contexts.  
+  Conventional irrigation systems rely on manual monitoring, leading to over-watering, wastage, and unequal distribution among users.  
+  With increasing urbanization and limited water resources, efficient and automated irrigation control has become a vital problem.  
+
+  Digital systems using simple logic components can effectively manage irrigation schedules, monitor usage quotas, and respond to real-time environmental inputs like soil moisture and rainfall.  
+  Implementing these functions through hardware logic instead of software demonstrates the power of digital design in sustainable resource management.
+
+  ---
+
+  ### Motivation
+  The motivation behind this project is to create an affordable and educational hardware model that showcases intelligent water distribution across multiple users — without using microcontrollers.  
+
+  Multi-user irrigation ensures fair water sharing, while features such as rain detection and soil moisture monitoring prevent unnecessary pumping.  
+  Integrating water quota management introduces a controlled resource-allocation mechanism, encouraging responsible water use.  
+
+  The project thus combines environmental awareness with practical learning in combinational and sequential logic design, making it ideal for demonstration on a standard IC trainer kit.
+
+  ---
+
+  ### Unique Contribution
+  This project implements a complete hardware-based irrigation management system using logic gates, counters, comparators, multiplexers, and display drivers.  
+
+  Each user has a preset water quota tracked by a down-counter, with the remaining volume displayed on a 7-segment display.  
+  The system automatically turns the pump ON when the soil is dry and OFF when rain is detected or quota is depleted.  
+
+  Multi-user switching allows independent monitoring and fair distribution, while manual reset and control switches enable user interaction.  
+
+  The design illustrates key digital concepts — including combinational control logic, state sequencing, resource sharing, and real-time hardware interfacing — making it both environmentally relevant and educational.
+
 </details>
+
 
 ---
 
-## ⚙️ Functional Block Diagram
+## Functional Block Diagram
 <details>
   <summary>Detail</summary>
   
-  ![Functional Block Diagram](https://github.com/user-attachments/assets/588c9f81-997e-431b-8da3-0b40f3713d4e)
+  ![Functional Block Diagram](https://github.com/user-attachments/assets/588c9f81-997e-431b-8da3-0b40f3713d4e](https://i.ibb.co/0R53Q5X7/diagram.png))
 
   > The diagram represents the interconnection of all modules — including **zone sequencer**, **registers**, **moisture and rain sensors**, and the **controller**.  
   >  
@@ -48,11 +71,11 @@
 
 ---
 
-## 🔄 Working
+## Working
 <details>
   <summary>Detail</summary>
 
-  ### 💧 Working Principle
+  ### Working Principle
 
   > The Smart Irrigation System ensures **controlled, priority-based watering** of multiple fields (zones).  
   > Each zone has its own **quota** (maximum water limit) and **sensor inputs** (moisture and rain).  
@@ -69,7 +92,7 @@
   > This ensures **better water pressure**, **efficient electricity usage**, and **uniform distribution**.  
   > It also prevents overloading the pump or system circuitry.
 
-  ### ⚡ Functional Table
+  ### Functional Table
 
   | Condition | Rain | Moisture (Dry) | Quota Exceeded | Valve | Action |
   |------------|------|----------------|----------------|--------|---------|
@@ -79,7 +102,7 @@
   | Quota Exhausted | 0 | 1 | 1 | 0 | Switch to Next Zone |
   | Manual Override | X | X | 0 | 1 | Force Watering |
 
-  ### 🧠 Flowchart
+  ### Flowchart
   > 1. Start →  
   > 2. Check Rain → If raining → Stop pump → Go back.  
   > 3. Else Check Moisture → If wet → Skip zone.  
@@ -90,7 +113,7 @@
 
 ---
 
-## 🧩 Logisim Circuit Diagram
+## Logisim Circuit Diagram
 <details>
   <summary>Detail</summary>
 
@@ -105,3 +128,4 @@
   >  
   > A **6-bit to BCD display converter** was added to display usage levels.
 </details>
+
