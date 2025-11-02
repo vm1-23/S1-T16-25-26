@@ -60,14 +60,15 @@
 <details>
   <summary>Detail</summary>
   
-  ![Functional Block Diagram](https://github.com/user-attachments/assets/588c9f81-997e-431b-8da3-0b40f3713d4e](https://i.ibb.co/0R53Q5X7/diagram.png))
+  ![Functional Block Diagram]([functional_block_diagram.png](https://i.ibb.co/0R53Q5X7/diagram.png))
 
   > The diagram represents the interconnection of all modules — including **zone sequencer**, **registers**, **moisture and rain sensors**, and the **controller**.  
-  >  
+  >
   > Each field (zone) has its own quota and moisture input.  
   > Once a zone reaches its quota, control automatically shifts to the next zone based on priority.  
   > Rain detection immediately halts watering across all zones.
 </details>
+
 
 ---
 
@@ -128,4 +129,5 @@
   >  
   > A **6-bit to BCD display converter** was added to display usage levels.
 </details>
+
 
