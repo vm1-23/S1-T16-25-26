@@ -131,5 +131,20 @@
   > A **6-bit to BCD display converter** was added to display usage levels.
 </details>
 
+## References
+<details>
+  <summary>Detail</summary>
+
+  | No. | Reference | Source / Link |
+  |:---:|:-----------|:--------------|
+  | 1 | Charles H. Roth, *Fundamentals of Logic Design*, Cengage Learning. | — |
+  | 2 | M. Morris Mano, *Digital Design*, Pearson Education. | — |
+  | 3 | *Automatic Irrigation System Using Digital Logic*, Circuit Digest. | [https://circuitdigest.com/electronic-circuits/automatic-irrigation-system-using-digital-logic](https://circuitdigest.com/electronic-circuits/automatic-irrigation-system-using-digital-logic) |
+  | 4 | *Smart Automatic Irrigation Control System*, ResearchGate. | [https://www.researchgate.net/publication/Smart_Automatic_Irrigation_Control_System](https://www.researchgate.net/publication/Smart_Automatic_Irrigation_Control_System) |
+  | 5 | *Logisim Evolution - Digital Logic Simulator*, Logisim Evolution Project. | [https://github.com/logisim-evolution/logisim-evolution](https://github.com/logisim-evolution/logisim-evolution) |
+
+</details>
+
+
 
 
