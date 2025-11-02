@@ -1,4 +1,4 @@
-# Write your mini-project title
+# Smart Irrigation System
 
 <!-- First Section -->
 ## Team Details
@@ -66,3 +66,4 @@
    [(https://www.bbc.com/news)](https://www.bbc.com/news/world-asia-india-65793257)
    
 </details>
+
