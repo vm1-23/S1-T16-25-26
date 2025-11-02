@@ -60,7 +60,8 @@
 <details>
   <summary>Detail</summary>
   
-  ![Functional Block Diagram]([functional_block_diagram.png](https://i.ibb.co/0R53Q5X7/diagram.png))
+  <img width="1280" height="368" alt="image" src="https://github.com/user-attachments/assets/3d4adb8d-66b2-453d-b660-0ad2baa6c0d7" />
+
 
   > The diagram represents the interconnection of all modules — including **zone sequencer**, **registers**, **moisture and rain sensors**, and the **controller**.  
   >
@@ -129,5 +130,6 @@
   >  
   > A **6-bit to BCD display converter** was added to display usage levels.
 </details>
+
 
 
