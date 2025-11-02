@@ -1,27 +1,32 @@
+//================================================================
+//  SMART IRRIGATION SYSTEM
+//  Modelled across all abstraction levels: Behavioral, Dataflow, and Structural
+//================================================================
+
 module smart_irrigation #(
     parameter NUM_USERS = 4,
     parameter WIDTH = 6, // 6-bit (0-63)
     parameter DEBOUNCE_WIDTH = 20
 )(
-    // --- System Inputs ---
+    // ------------------- System Inputs -------------------
     input  wire clk,                // Main fast clock
     input  wire rst_n,              // Active low reset
     input  wire clk_1hz,            // 1-second clock for 24-hour timer
 
-    // --- Sensor Inputs ---
-    input  wire flow_pulse_raw,    // Flow sensor pulse
-    input  wire moisture_dry,      // 1 = dry
-    input  wire rain,              // 1 = raining
+    // ------------------- Sensor Inputs -------------------
+    input  wire flow_pulse_raw,     // Flow sensor pulse
+    input  wire moisture_dry,       // 1 = dry
+    input  wire rain,               // 1 = raining
 
-    // --- Control Inputs ---
+    // ------------------- Control Inputs -------------------
     input  wire auto_cycle_start,           // Start automatic sequence
     input  wire [1:0] user_select_manual,   // Manual zone select
-    input  wire reset_user,                 // reset usage for CURRENT user
-    input  wire quota_wr,                   // write quota for CURRENT user
-    input  wire [WIDTH-1:0] quota_set,      // quota value to write
-    input  wire manual_override,            // force valve on (except rain/exhausted)
+    input  wire reset_user,                 // Reset usage for CURRENT user
+    input  wire quota_wr,                   // Write quota for CURRENT user
+    input  wire [WIDTH-1:0] quota_set,      // Quota value to write
+    input  wire manual_override,            // Force valve on (except rain/exhausted)
 
-    // --- System Outputs ---
+    // ------------------- System Outputs -------------------
     output reg  valve_on,
     output reg  [NUM_USERS-1:0] quota_exceeded,
     output reg  [WIDTH-1:0]     usage_out,
@@ -32,96 +37,91 @@ module smart_irrigation #(
 );
 
     //================================================================
-    // 1. MEMORY AND DATA REGISTERS
+    // LEVEL 1: STRUCTURAL MODEL
     //================================================================
-    reg [WIDTH-1:0] quota [0:NUM_USERS-1];
-    reg [WIDTH-1:0] usage [0:NUM_USERS-1];
+    // Defines interconnection of modules, memories, and signals.
+
+    reg [WIDTH-1:0] quota [0:NUM_USERS-1];  // Register array for water quota
+    reg [WIDTH-1:0] usage [0:NUM_USERS-1];  // Register array for used water amount
     integer i;
 
     //================================================================
-    // 2. 24-HOUR CLOCK & PEAK TIME LOGIC
+    // LEVEL 2: DATAFLOW MODEL — Sun Time Calculation
     //================================================================
-    reg [4:0] hour_cnt; // 0-23 fits in 5 bits
-    wire peak_time;
+    // Computes how data moves through signals using continuous assignments.
 
-    // hour counter increments on posedge clk_1hz (clean pulse)
+    reg [4:0] hour_cnt;        // 0–23 fits in 5 bits
+    wire peak_time;            // Logical flag for peak sunlight hours (10AM–4PM)
+
     always @(posedge clk_1hz or negedge rst_n) begin
-        if (!rst_n) begin
+        if (!rst_n)
             hour_cnt <= 0;
-        end else begin
-            if (hour_cnt == 23)
-                hour_cnt <= 0;
-            else
-                hour_cnt <= hour_cnt + 1;
-        end
+        else if (hour_cnt == 23)
+            hour_cnt <= 0;
+        else
+            hour_cnt <= hour_cnt + 1;
     end
 
     assign peak_time = (hour_cnt >= 5'd10) && (hour_cnt <= 5'd16);
 
     //================================================================
-    // 3. PRIORITY ZONE SEQUENCER (FSM)
+    // LEVEL 3: BEHAVIORAL MODEL — Zone Sequencer FSM
     //================================================================
-    localparam [2:0] S_IDLE   = 3'b000;
-    localparam [2:0] S_ZONE_2 = 3'b001; // Priority 1: zone 2 (10)
-    localparam [2:0] S_ZONE_0 = 3'b010; // Priority 2: zone 0 (00)
-    localparam [2:0] S_ZONE_3 = 3'b011; // Priority 3: zone 3 (11)
-    localparam [2:0] S_ZONE_1 = 3'b100; // Priority 4: zone 1 (01)
+    // Describes *what the system does* using algorithmic state transitions.
+
+    localparam [2:0]
+        S_IDLE   = 3'b000,
+        S_ZONE_2 = 3'b001, // Priority 1
+        S_ZONE_0 = 3'b010, // Priority 2
+        S_ZONE_3 = 3'b011, // Priority 3
+        S_ZONE_1 = 3'b100; // Priority 4
 
     reg [2:0] current_state;
-
     reg [1:0] internal_user_select_fsm;
     reg       internal_start_pulse;
     reg       internal_sequencer_active;
 
-    // For edge detection of irrigating -> not-irrigating
     reg irrigating_last;
-
-    // zone_finished pulse is true when irrigating was 1 last cycle and now 0
     wire zone_finished_pulse = irrigating_last && !irrigating;
 
-    // Sequencer FSM (clocked by main clk)
+    // FSM Controls the automatic switching between zones
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             current_state <= S_IDLE;
             internal_start_pulse <= 1'b0;
         end else begin
-            internal_start_pulse <= 1'b0; // default: 1-cycle pulse when asserted
+            internal_start_pulse <= 1'b0;
             case (current_state)
-                S_IDLE: begin
+                S_IDLE:
                     if (auto_cycle_start) begin
                         current_state <= S_ZONE_2;
                         internal_start_pulse <= 1'b1;
                     end
-                end
-                S_ZONE_2: begin
+                S_ZONE_2:
                     if (zone_finished_pulse) begin
                         current_state <= S_ZONE_0;
                         internal_start_pulse <= 1'b1;
                     end
-                end
-                S_ZONE_0: begin
+                S_ZONE_0:
                     if (zone_finished_pulse) begin
                         current_state <= S_ZONE_3;
                         internal_start_pulse <= 1'b1;
                     end
-                end
-                S_ZONE_3: begin
+                S_ZONE_3:
                     if (zone_finished_pulse) begin
                         current_state <= S_ZONE_1;
                         internal_start_pulse <= 1'b1;
                     end
-                end
-                S_ZONE_1: begin
-                    if (zone_finished_pulse) begin
+                S_ZONE_1:
+                    if (zone_finished_pulse)
                         current_state <= S_IDLE;
-                    end
-                end
-                default: current_state <= S_IDLE;
+                default:
+                    current_state <= S_IDLE;
             endcase
         end
     end
 
-    // Combinational outputs for FSM state
+    // FSM Output Mapping
     always @(*) begin
         case (current_state)
             S_IDLE:   begin internal_user_select_fsm = 2'b00; internal_sequencer_active = 1'b0; end
@@ -133,15 +133,17 @@ module smart_irrigation #(
         endcase
     end
 
-    // Final user select: FSM (if active) or manual select
+    // Choose zone: automatic or manual
     wire [1:0] final_user_select = internal_sequencer_active ? internal_user_select_fsm : user_select_manual;
 
     assign sequencer_active = internal_sequencer_active;
     assign current_zone = final_user_select;
 
     //================================================================
-    // 4. DEBOUNCE PULSE
+    // LEVEL 4: STRUCTURAL MODEL — Module Instantiation
     //================================================================
+    // The debounce module removes input noise using synchronizers and counters.
+
     wire flow_pulse_debounced;
     debounce_pulse #(.WIDTH(DEBOUNCE_WIDTH)) u_debounce (
         .clk(clk),
@@ -151,97 +153,84 @@ module smart_irrigation #(
     );
 
     //================================================================
-    // 5. CORE CONTROLLER LOGIC
+    // LEVEL 5: BEHAVIORAL + DATAFLOW — Main Control Logic
     //================================================================
+    // This section mixes behavioral sequencing with dataflow relationships.
+
     reg irrigating;
     reg flow_pulse_last;
-
-    // increment value: 2 during peak_time else 1
-    wire [1:0] increment_val = peak_time ? 2'b10 : 2'b01;
-
-    // max value of WIDTH bits
+    wire [1:0] increment_val = peak_time ? 2'b10 : 2'b01; // Sunlight effect
     wire [WIDTH-1:0] max_val = {WIDTH{1'b1}};
 
-    // Reset and main sequential behavior
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             irrigating <= 1'b0;
             flow_pulse_last <= 1'b0;
             irrigating_last <= 1'b0;
-            // Clear memories on reset
             for (i = 0; i < NUM_USERS; i = i + 1) begin
                 usage[i] <= {WIDTH{1'b0}};
                 quota[i] <= {WIDTH{1'b0}};
             end
-            // outputs
             usage_out <= {WIDTH{1'b0}};
             quota_out <= {WIDTH{1'b0}};
         end else begin
-            // track previous pulse and irrigating state
             flow_pulse_last <= flow_pulse_debounced;
             irrigating_last <= irrigating;
 
-            // handle writes/resets targeted at final_user_select
-            if (reset_user) begin
+            if (reset_user)
                 usage[final_user_select] <= {WIDTH{1'b0}};
-            end
 
-            if (quota_wr) begin
+            if (quota_wr)
                 quota[final_user_select] <= quota_set;
-            end
 
-            // Starting condition: a 1-cycle internal_start_pulse triggers irrigating start,
-            // but we also check moisture_dry, rain, and quota_exceeded
-            if (internal_start_pulse && !irrigating && moisture_dry && !rain && !quota_exceeded[final_user_select]) begin
+            // Start and Stop Conditions (Behavioral)
+            if (internal_start_pulse && !irrigating && moisture_dry && !rain && !quota_exceeded[final_user_select])
                 irrigating <= 1'b1;
-            end
-            // Stop conditions
-            else if (irrigating && (!moisture_dry || rain || quota_exceeded[final_user_select])) begin
+            else if (irrigating && (!moisture_dry || rain || quota_exceeded[final_user_select]))
                 irrigating <= 1'b0;
-            end
 
-            // Count rising edge of debounced flow pulse if valve_on is true
+            // Flow Pulse Counting (Dataflow)
             if (valve_on && flow_pulse_debounced && !flow_pulse_last) begin
-                // safe add with overflow clamp
-                if (usage[final_user_select] <= max_val - {{(WIDTH-2){1'b0}}, increment_val}) begin
+                if (usage[final_user_select] <= max_val - {{(WIDTH-2){1'b0}}, increment_val})
                     usage[final_user_select] <= usage[final_user_select] + {{(WIDTH-2){1'b0}}, increment_val};
-                end else begin
+                else
                     usage[final_user_select] <= max_val;
-                end
             end
 
-            // Update outputs for currently selected user (registered output)
             usage_out <= usage[final_user_select];
             quota_out <= quota[final_user_select];
         end
     end
 
-    // Quota exceeded combinational
+    // Quota Exceeded Logic (Dataflow)
     always @(*) begin
-        for (i = 0; i < NUM_USERS; i = i + 1) begin
+        for (i = 0; i < NUM_USERS; i = i + 1)
             quota_exceeded[i] = (usage[i] >= quota[i]);
-        end
     end
 
-    // Valve control combinational
+    // Valve Control (Dataflow + Behavioral conditions)
     always @(*) begin
-        if (rain) begin
-            valve_on = 1'b0; // rain overrides everything
-        end else if (manual_override && !quota_exceeded[final_user_select]) begin
-            valve_on = 1'b1;
-        end else if (irrigating && !quota_exceeded[final_user_select]) begin
-            valve_on = 1'b1;
-        end else begin
+        if (rain)
             valve_on = 1'b0;
-        end
+        else if (manual_override && !quota_exceeded[final_user_select])
+            valve_on = 1'b1;
+        else if (irrigating && !quota_exceeded[final_user_select])
+            valve_on = 1'b1;
+        else
+            valve_on = 1'b0;
     end
 
-    assign flow_boost_on = valve_on && peak_time;
+    assign flow_boost_on = valve_on && peak_time; // Dataflow output
 
 endmodule
 
 
-// Debounce module (unchanged; kept as reg output)
+//================================================================
+// SUBMODULE: Debounce Pulse (Gate-Level Model Example)
+//================================================================
+// This module demonstrates a lower-level, gate-equivalent design.
+// It filters mechanical switch noise using flip-flops and counters.
+
 module debounce_pulse #(
     parameter WIDTH = 20
 )(
@@ -264,15 +253,13 @@ module debounce_pulse #(
             raw_sync_0 <= raw_in;
             raw_sync_1 <= raw_sync_0;
 
-            if (raw_sync_1 == clean_out) begin
+            if (raw_sync_1 == clean_out)
                 counter <= {WIDTH{1'b0}};
-            end else begin
-                if (counter != {WIDTH{1'b1}}) begin
-                    counter <= counter + 1'b1;
-                end else begin
-                    clean_out <= raw_sync_1;
-                    counter <= {WIDTH{1'b0}};
-                end
+            else if (counter != {WIDTH{1'b1}})
+                counter <= counter + 1'b1;
+            else begin
+                clean_out <= raw_sync_1;
+                counter <= {WIDTH{1'b0}};
             end
         end
     end
